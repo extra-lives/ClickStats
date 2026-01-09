@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import threading
 from datetime import datetime
 import tkinter as tk
@@ -9,7 +10,8 @@ from PIL import Image, ImageDraw
 import pystray
 from pynput import mouse
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "clicks.json")
+_BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
+DATA_PATH = os.path.join(_BASE_DIR, "clicks.json")
 
 _lock = threading.Lock()
 _dirty = False
