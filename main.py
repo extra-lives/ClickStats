@@ -25,23 +25,38 @@ _start_time = None
 
 
 def _load_count():
-    global _left_count, _right_count
+    global _left_count, _right_count, _start_time
     try:
         with open(DATA_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
             _left_count = int(data.get("left", 0))
             _right_count = int(data.get("right", 0))
+            start_raw = data.get("start")
+            if isinstance(start_raw, str):
+                try:
+                    _start_time = datetime.fromisoformat(start_raw)
+                except ValueError:
+                    _start_time = None
     except FileNotFoundError:
         _left_count = 0
         _right_count = 0
+        _start_time = None
     except (ValueError, json.JSONDecodeError):
         _left_count = 0
         _right_count = 0
+        _start_time = None
 
 
 def _save_count():
     with open(DATA_PATH, "w", encoding="utf-8") as f:
-        json.dump({"left": _left_count, "right": _right_count}, f)
+        json.dump(
+            {
+                "left": _left_count,
+                "right": _right_count,
+                "start": _start_time.isoformat() if _start_time else None,
+            },
+            f,
+        )
 
 
 def _saver_loop():
@@ -132,7 +147,7 @@ def _create_image():
 def _build_menu():
     return pystray.Menu(
         pystray.MenuItem(
-            lambda item: f"Right Clicks: {_right_count} / Left Clicks: {_left_count}",
+            lambda item: f"Left Clicks: {_left_count} / Right Clicks: {_right_count}",
             None,
             enabled=False,
         ),
@@ -142,9 +157,12 @@ def _build_menu():
 
 
 def main():
-    global _icon, _listener, _tk_root, _start_time
+    global _icon, _listener, _tk_root, _start_time, _dirty
     _load_count()
-    _start_time = datetime.now()
+    if _start_time is None:
+        _start_time = datetime.now()
+        with _lock:
+            _dirty = True
     _tk_root = tk.Tk()
     _tk_root.withdraw()
     _icon = pystray.Icon(
